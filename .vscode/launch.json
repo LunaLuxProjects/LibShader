@@ -1,0 +1,42 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch",
+            "linux": {
+                "program": "${workspaceFolder}/debug-linux/Debug/GlimmerCompiler",
+            },
+            "windows": {
+                "program": "${workspaceFolder}/debug-windows/Debug/GlimmerCompiler.exe",
+            },
+            "args": [
+                "-s","${workspaceFolder}/tests/test.glm",
+                "-o", "${workspaceFolder}/tests/test",
+                "-t", "spirv"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug",
+            "linux": {
+                "program": "${workspaceFolder}/debug-linux/Debug/GlimmerCompiler",
+            },
+            "windows": {
+                "program": "${workspaceFolder}/debug-windows/Debug/GlimmerCompiler.exe",
+            },
+            "args": [
+                "-s","${workspaceFolder}/tests/test.glm",
+                "-o", "${workspaceFolder}/tests/test",
+                "-t", "spirv"
+            ],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
