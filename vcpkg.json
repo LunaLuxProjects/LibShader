@@ -2,11 +2,6 @@
     "name": "libshader",
     "version-string": "latest",
     "dependencies": [
-        {
-            "name" : "llvm",
-            "default-features": false,
-            "features": [ "enable-abi-breaking-checks","disable-assertions","compiler-rt","enable-threads","target-x86","mlir","default-options","lld","tools"]
-        },
         "argparse"
     ]
 }

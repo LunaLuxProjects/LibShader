@@ -8,6 +8,7 @@
 #    define EXPORT_DLL
 #endif
 #include <cstdint>
+#include <cstddef>
 typedef uint8_t uint8;
 typedef uint16_t uint16;
 typedef uint16_t losUnicode;

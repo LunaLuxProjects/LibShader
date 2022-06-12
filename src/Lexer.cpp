@@ -1,11 +1,11 @@
 #include "Lexer.h"
 #include <iostream>
-#include <future>
+#include <cstring>
 #include <ranges>
 #include <stdio.h>
 
 
-const std::string keywords[] = {"void","int8","int16","int32","int64","int128","uint8","uint16","uint32","uint64","uint128","string","func","ret","input","output","import","public","for","while","if","elif"};
+const char* keywords[] = {"void","int8","int16","int32","int64","int128","uint8","uint16","uint32","uint64","uint128","string","func","ret","input","output","import","public","for","while","if","elif"};
 
 void split(const std::string & original, char separator, std::vector<std::string> * results )
 {
@@ -21,7 +21,7 @@ void split(const std::string & original, char separator, std::vector<std::string
     results->push_back( std::string( start, next ) );
 }
 
-inline const bool isOp(const std::string & str) noexcept
+inline bool isOp(const std::string & str) noexcept
 {
     if( str.size() > 2)
         return false;
@@ -45,7 +45,7 @@ inline const bool isOp(const std::string & str) noexcept
     }
 }
 
-inline const bool isKeyword(const std::string & str) noexcept
+inline bool isKeyword(const std::string& str) noexcept
 {
     for(auto& keyword: keywords)
     {
@@ -55,7 +55,7 @@ inline const bool isKeyword(const std::string & str) noexcept
     return false;
 }
 
-inline const bool canBeSingle(const char letter) noexcept
+inline bool canBeSingle(const char letter) noexcept
 {
     switch(letter)
     {
@@ -78,48 +78,39 @@ inline const bool canBeSingle(const char letter) noexcept
     }
 }
 
-Token lexToken(const std::string& str) noexcept
+inline bool isNumber(const std::string& str)
+{
+    for(char letter: str)
+    {
+        if(!std::isdigit(letter))
+            return true;
+    }
+    return true;
+}
+
+inline Token lexToken(const std::string& str) noexcept
 {
     TokenKey key;
     if(isKeyword(str))
-    {
         key = KEYWORD_KEY;
-        goto done;
-    }
     else if(std::all_of(str.begin(), str.end(),[](char c){ return std::isdigit(c) != 0; }))
-    {
         key = NUMBER_KEY;
-        goto done;
-    }
     else if(isOp(str))
-    {
-         key = OP_KEY;
-         goto done;
-    }
+        key = OP_KEY;
     else if(str[0] == '\"')
-    {
         key = STR_KEY;
-        goto done;
-    }
     else if(str == "::")
-    {
         key = NAMESPACE_KEY;
-        goto done;
-    }
     else
-    {
-         key = WORD_KEY;
-         goto done;
-    }
-    done:
+        key = WORD_KEY;
     
     return Token(key,str);
 }
 
-std::string lexLine(const std::string& str) noexcept
+inline std::string lexLine(const char* str) noexcept
 {
     std::string result;
-    for(size_t i = 0; i < str.size(); i++)
+    for(size_t i = 0; i < strlen(str); i++)
     {
         const char& c = str[i];
 
@@ -137,7 +128,7 @@ std::string lexLine(const std::string& str) noexcept
     return result;
 }
 
-const std::vector<Token> lex(std::string& source)
+const std::vector<Token> lex(std::string& source) noexcept
 {
     std::vector<Token> result;
     std::vector<std::string> lines;
@@ -145,15 +136,15 @@ const std::vector<Token> lex(std::string& source)
 
     std::vector<std::string> words;
     {
-        std::vector<std::future<std::string>> fixed_lines;
+        std::vector<std::string> fixed_lines;
 
         for (auto line : lines)
-            fixed_lines.emplace_back(std::async(lexLine, std::move(line)));
+            fixed_lines.emplace_back(std::move(lexLine(line.c_str())));
 
         for (auto& fixed_line : fixed_lines)
         {
             std::vector<std::string> words_;
-            split(fixed_line.get(), ' ',&words_);
+            split(fixed_line, ' ',&words_);
             std::string result;
             bool inQuote = false,special = false;
             for (auto& word : words_)
@@ -197,19 +188,17 @@ const std::vector<Token> lex(std::string& source)
         }
     }
 
-    std::vector<std::future<Token>> tokens;
+    std::vector<Token> tokens;
 
     for (auto& word : words)
     {
         if (!word.empty())
-            tokens.emplace_back(std::async(lexToken, word));
+            tokens.emplace_back(lexToken(word));
     }
 
     for (auto& f_result : tokens)
-    {
-        f_result.wait();
-        result.emplace_back(f_result.get());
-    }
+        result.emplace_back(f_result);
+
     return result;
 }
 

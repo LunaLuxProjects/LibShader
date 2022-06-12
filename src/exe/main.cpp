@@ -45,20 +45,22 @@ int main(int argc, char **argv)
 
 
     glmErrorOrData data;
-    uint32 hash = std::hash<std::string>{}(program.get<std::string>("-t"));
+    std::string target = program.get<std::string>("-t");
     std::vector<std::string> flags;
 
-    switch(hash)
+
+    if(target == "x86_64")
     {
-        case 1900753072:
-            data = compileToX86(flags,str);
-        case 3689138625:
-            data = compileToSpirv(flags,str);
-        default:
-        {
-            std::cerr << "not a valid target: " << program.get<std::string>("-t")<< " of hash" << hash << std::endl;
-            std::exit(1);
-        }
+        data = compileToX86(flags,str);
+    }
+    else if(target == "spirv")
+    {
+        data = compileToSpirv(flags,str);
+    }
+    else
+    {
+        std::cerr << "not a valid target: " << program.get<std::string>("-t")<< std::endl;
+        std::exit(1);
     }
     return 0;
 }

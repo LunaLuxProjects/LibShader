@@ -16,8 +16,9 @@ struct Token
     TokenKey key;
     std::string value;
 
-    explicit Token(TokenKey key, std::string value): key(key), value(value){};
+    Token(){};
+    Token(TokenKey key, std::string value): key(key), value(value){};
 };
 
-const std::vector<Token> lex(std::string&);
+const std::vector<Token> lex(std::string&) noexcept;
 void lexCheck(const std::vector<Token>&) noexcept;

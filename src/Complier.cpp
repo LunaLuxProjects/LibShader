@@ -43,7 +43,7 @@ const glmErrorOrData compileToSpirv(std::vector<std::string>,std::string& source
     return glmErrorOrData(true,"not implemented");
 }
 
-const glmErrorOrData compileToX86(std::vector<std::string> flags,std::string& source)
+const glmErrorOrData compileToX86(std::vector<std::string>,std::string& source)
 {
     sharedStages(source);
     return glmErrorOrData(true,"not implemented");
