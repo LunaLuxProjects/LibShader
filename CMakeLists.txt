@@ -19,13 +19,14 @@ include_directories(${PROJECT_SOURCE_DIR}/Includes)
 
 set(sources
     src/Complier.cpp
-    src/Lexer.cpp)
+    src/Lexer.cpp
+    src/Parser.cpp)
 
 #llvm_map_components_to_libnames(llvm_libs -c)
 add_library(libshader SHARED ${sources})
 target_include_directories(libshader PRIVATE ${LLVM_INCLUDE_DIRS})
 if(MSVC)
-  target_compile_options(libshader PRIVATE /W4 /WX /EHsc)
+  target_compile_options(libshader PRIVATE /W4 /WX /EHsc) # /Ofast
 else()
   target_compile_options(libshader PRIVATE -Wall -Wextra -Wpedantic -Werror) # -Ofast -fno-exceptions -finline-functions -march=intel
 endif()

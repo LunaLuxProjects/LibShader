@@ -1,7 +1,7 @@
-import stdio
+import io
 
 func main() -> int32
 {
-    printf("%s","hello world!")
+    io::println("Hello world!")
     ret 0
 }

@@ -5,15 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "lldb",
+            "type": "cppvsdbg",
             "request": "launch",
-            "name": "Launch",
-            "linux": {
-                "program": "${workspaceFolder}/debug-linux/Debug/GlimmerCompiler",
-            },
-            "windows": {
-                "program": "${workspaceFolder}/debug-windows/Debug/GlimmerCompiler.exe",
-            },
+            "name": "cppvsdbg",
+            "program": "${workspaceFolder}/debug-windows/Debug/GlimmerCompiler.exe",
             "args": [
                 "-s","${workspaceFolder}/tests/test.glm",
                 "-o", "${workspaceFolder}/tests/test",
@@ -24,7 +19,7 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug",
+            "name": "lldb",
             "linux": {
                 "program": "${workspaceFolder}/debug-linux/Debug/GlimmerCompiler",
             },
