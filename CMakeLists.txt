@@ -9,7 +9,9 @@ option(USE_SANATIZER ON)
 
 #find_package(LLVM CONFIG REQUIRED)
 find_package(argparse CONFIG REQUIRED)
-list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
+find_package(RapidJSON CONFIG REQUIRED)
+find_package(GTest CONFIG REQUIRED)
+#list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 #include(HandleLLVMOptions)
 #add_definitions(${LLVM_DEFINITIONS})
 
@@ -42,10 +44,14 @@ endif()
 set(LINK_LIBS ${llvm_libs})
 
 #target_link_libraries(libshader PRIVATE ${LINK_LIBS}) 
+target_link_libraries(libshader PRIVATE  rapidjson)
 
 add_executable(GlimmerCompiler src/exe/main.cpp)
 if(MSVC)
   target_compile_options(GlimmerCompiler PRIVATE /EHsc)
 endif()
-target_link_libraries(GlimmerCompiler libshader argparse::argparse)
+target_link_libraries(GlimmerCompiler PRIVATE libshader argparse::argparse)
+
+add_executable(GlimmerTest src/exe/testmain.cpp)
+target_link_libraries(GlimmerTest PRIVATE libshader GTest::gmock GTest::gtest GTest::gmock_main GTest::gtest_main)
 

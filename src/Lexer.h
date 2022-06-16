@@ -23,6 +23,7 @@ class LexStateMachine
 
     State current_state = State::LETTER_MODE;
     std::string_view source;
+    uint64 source_size;
     uint64 index = 0;
     uint64 line = 1;
     bool did_state_change = false;
@@ -33,7 +34,9 @@ class LexStateMachine
     void handleState(const char&) noexcept;
 
     public:
-    explicit LexStateMachine(std::string_view source_in) : source(std::move(source_in)) {};
-    inline bool eof() const noexcept { return (index + 1) < source.length();}
+    explicit LexStateMachine(std::string_view source_in) : source(std::move(source_in)) { source_size = source.length();};
+    inline bool eof() const noexcept { return index < source_size;}
     const Lex getLexWord();
+    const std::string_view getSubString(const uint64,const uint64) noexcept;
+    const std::string getSubRealString(const uint64,const uint64) noexcept;
 };

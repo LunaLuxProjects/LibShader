@@ -188,12 +188,31 @@ const Lex LexStateMachine::getLexWord()
 {
     Lex lex;
     lex.start = index;
-    while(eof())
+    [[unlikely]]if(index == 0)
+        (void)_break(source[0]);
+
+    while(index < source_size)
     {
-        if(_break(source[(index++) + 1]))
+        if(_break(source[std::min<uint64>((source_size - 1),(index++) + 1)]))
             break;
     }
     lex.line = line;
     lex.end = index;
+    if(getSubString(lex.start, lex.end) == " ")
+        lex = getLexWord();
     return std::move(lex);   
+}
+
+const std::string_view LexStateMachine::getSubString(const uint64 start, const uint64 end) noexcept
+{
+    return source.substr(start, std::max<const uint64>(end - start,1));
+}
+
+const std::string LexStateMachine::getSubRealString(const uint64 start,const uint64 end) noexcept
+{
+    std::string result;
+    size true_size =  std::max<uint64>(end - start,1) + start;
+    for(size i = start; i < true_size; i++) 
+        result += source.at(i);
+    return std::move(result);
 }

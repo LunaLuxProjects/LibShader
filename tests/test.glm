@@ -1,7 +1,1 @@
-import io
-
-func main() -> int32
-{
-    io::println("Hello world!")
-    ret 0
-}
+int8 x = 20
