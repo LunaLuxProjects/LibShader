@@ -1,287 +1,248 @@
 #include "Parser.h"
-#include <iostream>
-#include <string_view>
-#include <cstddef>
 #include <algorithm>
-#include <unordered_map>
 
-const uint64 keywords_lookup[] = 
+const size keyword_lookup[] = 
 {
-    std::hash<std::string_view>{}("func"),
-    std::hash<std::string_view>{}("ret"),
-    std::hash<std::string_view>{}("void"),
-    std::hash<std::string_view>{}("int8"),
-    std::hash<std::string_view>{}("int16"),
-    std::hash<std::string_view>{}("int32"),
-    std::hash<std::string_view>{}("int64"),
-    std::hash<std::string_view>{}("int128"),
-    std::hash<std::string_view>{}("uint8"),
-    std::hash<std::string_view>{}("uint16"),
-    std::hash<std::string_view>{}("uint32"),
-    std::hash<std::string_view>{}("uint64"),
-    std::hash<std::string_view>{}("uint128"),
-    std::hash<std::string_view>{}("float32"),
-    std::hash<std::string_view>{}("float64"),
-    std::hash<std::string_view>{}("float128"),
-    std::hash<std::string_view>{}("string"),
-    std::hash<std::string_view>{}("for"),
-    std::hash<std::string_view>{}("while"),
-    std::hash<std::string_view>{}("if"),
-    std::hash<std::string_view>{}("elif"),
+    std::hash<std::string>{}("func"),
+    std::hash<std::string>{}("ret"),
+    std::hash<std::string>{}("and"),
+    std::hash<std::string>{}("or")
 };
 
-[[noreturn]]void Parser::error(const char *message) noexcept
+const std::tuple<size,ASTDataType> data_type_lookup[] = 
 {
-    std::cerr << "Error: " << message << std::endl;
-    std::cerr << "At Lex Index: (" << word_data.start << "," << word_data.end << ")" << std::endl;
-    std::cerr << "Word: " << lexer->getSubString(word_data.start, word_data.end) << std::endl;
-    std::cerr << "Or Line: " << word_data.line << std::endl;
-    std::abort();
+    {std::hash<std::string>{}("uint8"),UINT8_TYPE},
+    {std::hash<std::string>{}("uint16"),UINT16_TYPE},
+    {std::hash<std::string>{}("uint32"),UINT32_TYPE},
+    {std::hash<std::string>{}("uint64"),UINT64_TYPE},
+    {std::hash<std::string>{}("uint128"),UINT128_TYPE},
+    {std::hash<std::string>{}("int8"),INT8_TYPE},
+    {std::hash<std::string>{}("int16"),INT16_TYPE},
+    {std::hash<std::string>{}("int32"),INT32_TYPE},
+    {std::hash<std::string>{}("int64"),INT64_TYPE},
+    {std::hash<std::string>{}("int128"),INT128_TYPE},
+    {std::hash<std::string>{}("float32"),FLOAT32_TYPE},
+    {std::hash<std::string>{}("float64"),FLOAT64_TYPE},
+    {std::hash<std::string>{}("float128"),FLOAT128_TYPE}
+};
+
+bool Parser::isValidName(const lexToken& token) noexcept
+{
+    size view = std::hash<std::string>{}(lexer->refSource().substr(token.span.start, std::max<size>(1,token.span.end - token.span.start)));
+    for(auto& item:keyword_lookup)
+    {
+        if(item == view) return false;
+    }
+    for(auto& item:data_type_lookup)
+    {
+        if(std::get<0>(item) == view) return false;
+    }
+    return true;
 }
 
-[[nodiscard]]const bool Parser::isKeyword(const std::string_view word) noexcept
+bool Parser::isDataType(const lexToken& token) noexcept
 {
-    auto hash = std::hash<std::string_view>{}(word);
-    for(const auto& item: keywords_lookup)
+    size view = std::hash<std::string>{}(lexer->refSource().substr(token.span.start, std::max<size>(1,token.span.end - token.span.start)));
+    for(auto& item:data_type_lookup)
     {
-        if(hash == item) 
-            return true;
+        if(std::get<0>(item) == view) return true;
     }
     return false;
 }
 
-[[nodiscard]]const ASTDataType Parser::getFromHash(const size hash) noexcept
+ASTDataType Parser::parseDataType(const lexToken& token) noexcept
 {
-    if(hash == keywords_lookup[2]) return VOID_TYPE;
-    else if(hash == keywords_lookup[3]) return INT8_TYPE;
-    else if(hash == keywords_lookup[4]) return INT16_TYPE;
-    else if(hash == keywords_lookup[5]) return INT32_TYPE;
-    else if(hash == keywords_lookup[6]) return INT64_TYPE;
-    else if(hash == keywords_lookup[7]) return INT128_TYPE;
-    else if(hash == keywords_lookup[8]) return UINT8_TYPE;
-    else if(hash == keywords_lookup[9]) return UINT16_TYPE;
-    else if(hash == keywords_lookup[10]) return UINT32_TYPE;
-    else if(hash == keywords_lookup[11]) return UINT64_TYPE;
-    else if(hash == keywords_lookup[12]) return UINT128_TYPE;
-    else if(hash == keywords_lookup[13]) return FLOAT32_TYPE;
-    else if(hash == keywords_lookup[14]) return FLOAT64_TYPE;
-    else if(hash == keywords_lookup[15]) return FLOAT128_TYPE;
-    else if(hash == keywords_lookup[16]) return STR_TYPE;
-    else error("invalid type");
+     size view = std::hash<std::string>{}(lexer->refSource().substr(token.span.start, std::max<size>(1,token.span.end - token.span.start)));
+     for(auto& item:data_type_lookup)
+     {
+        if(std::get<0>(item) == view) return std::get<1>(item);
+     }
+     return NOT_DETERMINED_TYPE;
 }
 
-[[nodiscard]]const ASTDataType Parser::getTypeID() noexcept
-{   
-    return getFromHash(getHash(getNextWord()));
+bool Parser::isInteger(const lexToken& token) noexcept
+{
+    std::string s = lexer->refSource().substr(token.span.start, std::max<size>(1,token.span.end - token.span.start));
+    return std::all_of(s.begin(), s.end(),[](const int8 c) {return std::isdigit(c);});
 }
 
-[[nodiscard]]const bool Parser::isNumber() noexcept
+void Parser::warn(const lexToken& tok,const char* msg_text) noexcept
 {
-    std::string s = lexer->getSubRealString(word_data.start, word_data.end);
-    return std::all_of(s.begin(), s.end(),[](char c){ return isdigit(c) || c == '.'; });
+    writer->StartObject();
+    writer->Key("Type");
+    writer->String("warning");
+    writer->Key("Msg");
+    writer->String(msg_text);
+    writer->Key("Line");
+    writer->Int64(tok.line);
+    writer->Key("GlmSpan");
+    writer->StartArray();
+    writer->Int64(tok.span.start);
+    writer->Int64(tok.span.end);
+    writer->EndArray();
+    writer->EndObject();
 }
 
-[[nodiscard]]const size Parser::getHash(std::string_view word) noexcept
+void Parser::error(const lexToken& tok,const char* msg_text) noexcept
 {
-    size hash = 0;
-    if(word == "uint" || word == "int" || word == "float")
+    writer->StartObject();
+    writer->Key("Type");
+    writer->String("error");
+    writer->Key("Msg");
+    writer->String(msg_text);
+    writer->Key("Line");
+    writer->Int64(tok.line);
+    writer->Key("GlmSpan");
+    writer->StartArray();
+    writer->Int64(tok.span.start);
+    writer->Int64(tok.span.end);
+    writer->EndArray();
+    writer->EndObject();
+    has_error = true;
+}
+
+ASTLiteral* Parser::parseLiteral() noexcept
+{
+    ASTLiteral* literal = new ASTLiteral();
+    lexToken& current_token = lexer->getNextToken();
+    if(current_token != T_QUOTE)
     {
-        std::string str = lexer->getSubRealString(word_data.start, word_data.end);
-        std::string_view number = getNextWord();
-        str += lexer->getSubRealString(word_data.start, word_data.end);
-        hash = std::hash<std::string>{}(str);
+        if(!isInteger(current_token))
+            error(current_token,"this is not a valid numeric value");
+        literal->value = std::move(lexer->refSource().substr(current_token.span.start, std::max<size>(1,current_token.span.end - current_token.span.start)));
+        if(lexer->peekNextToken() == T_DOT)
+        {
+            lexer->skipNextToken();
+            current_token = lexer->getNextToken();
+            if(!isInteger(current_token))
+                error(current_token,"this is not a valid numeric value");
+            literal->value += '.';
+            literal->value += std::move(lexer->refSource().substr(current_token.span.start, std::max<size>(1,current_token.span.end - current_token.span.start)));
+        }
+        else if(literal->data_type == FLOAT32_TYPE || literal->data_type == FLOAT64_TYPE || literal->data_type == FLOAT128_TYPE)
+        {
+            literal->value += ".0";
+        }
     }
-    else hash = std::hash<std::string_view>{}(word);
-    return hash;
+    else error(current_token,"we don't have string support yet");
+    return std::move(literal);
 }
 
-const std::string_view Parser::getNextWord(bool ignore_newline) noexcept
+const ASTExpression* Parser::parseVar(lexToken* current_token) noexcept
 {
-    if(hold && held_lex.line != 0)
-    {
-        std::string_view str = lexer->getSubString(held_lex.start, held_lex.end);
-        hold = false;
-        held_lex.line = 0;
-        return str;
-    }
+    ASTExpression* node = new ASTExpression();
+    node->type = ASTE_VAR_DEFINED;
+    ASTLiteral* literal;
+    ASTDataType data_type = parseDataType(*current_token);
 
-    Lex lex = lexer->getLexWord();
-    if(!ignore_newline)
+    if(!isValidName(*current_token = lexer->getNextToken()))
+        error((*current_token),"this is not a valid param name");
+
+    node->extra_data = std::move(lexer->refSource().substr((*current_token).span.start, std::max<size>(1,(*current_token).span.end - (*current_token).span.start)));
+
+    if(lexer->peekNextToken() != T_EQUAL)
     {
-        word_data = lex;
-        Lex temp;
-        std::string_view str = lexer->getSubString(lex.start, lex.end);
+        literal = new ASTLiteral();
+        literal->data_type = data_type;
+        if(literal->data_type >= 2 && literal->data_type <= 11)
+            literal->value = "0";
+        else if(literal->data_type >= 12 && literal->data_type <= 14)
+            literal->value = "0.0";
+        else literal->value = "";
+    }
+    else
+    {
+        lexer->skipNextToken();
+        literal = std::move(parseLiteral());
+        literal->data_type = data_type;
+    }
+    node->list.emplace_back(std::move(literal));
+    return std::move(node);
+}
+
+const ASTExpression* Parser::parseArgs() noexcept
+{
+    ASTExpression* expression = new ASTExpression();
+    expression->type = ASTE_PRAM_LIST;
+    lexToken& current_token = lexer->getNextToken();
+    while ((current_token = lexer->getNextToken()) != T_R_CURLY)
+    {
+        if(!isDataType(current_token))
+            error(current_token,"this is not a supported data type");
         
-        while((str = lexer->getSubString(lex.start, lex.end)) != "\n")
-        {
-            if(temp.end == lex.end || str == "}")
-            {
-                hold = true;
-                break;
-            }
-            temp = lex;
-            lex = lexer->getLexWord();
-        }
-        if(hold)
-            held_lex = lex;
+        ASTLiteral* literal = new ASTLiteral();
+        literal->data_type = std::move(parseDataType(current_token));
 
-        word_data.end = temp.end;
-    } else word_data = lex;
-    std::string_view result = lexer->getSubString(word_data.start, word_data.end);
-    if(result == ";" || result == "\n")
-        return getNextWord(ignore_newline);
-    return result;
-}
+        if(!isValidName((current_token = lexer->getNextToken())))
+            error(current_token,"this is not a valid param name");
 
-[[nodiscard]]const bool Parser::isValidName() noexcept
-{
-    std::string s = lexer->getSubRealString(word_data.start, word_data.end);
-    return std::none_of(s.begin(),s.end(),[](char c){ return isalpha(c) || c == '_'; });
-}
+        literal->value = lexer->refSource().substr(current_token.span.start, std::max<size>(1,current_token.span.end - current_token.span.start));
 
-[[nodiscard]]const std::vector<const ASTNode *> Parser::parseArgs()
-{
-    std::vector<const ASTNode *> args;
+        expression->list.emplace_back(std::move(literal));
 
-    std::string_view word;
-    while((word = getNextWord()) != ")")
-    {
-        error("todo args parsing");
+        if(lexer->peekNextToken() != T_COMMA) lexer->skipNextToken();
     }
-
-    return std::move(args);   
+    return std::move(expression);
 }
 
-[[nodiscard]]const std::vector<const ASTNode *> Parser::parseBlock()
+const ASTBlock* Parser::parseBlock() noexcept
 {
-    std::vector<const ASTNode *> block;
-
-    std::string_view word;
-    while((word = getNextWord()) != "}")
+    ASTBlock* block = new ASTBlock();
+    lexToken& current_token = lexer->getNextToken();
+    while ((current_token = lexer->getNextToken()) != T_R_SQUIGGLY)
     {
-        auto hash = getHash(word);
-
-        if(hash == keywords_lookup[1])
+        if(current_token == T_RET)
         {
-            auto* node = new ASTExpression();
+            ASTExpression* node = new ASTExpression();
             node->type = ASTE_RETURN;
-            word = getNextWord(false);
-            auto* sub_node = new ASTLiteral();
-            if(isNumber())
-            {
-                if(word.find('.') == std::string::npos)
-                    sub_node->type = INT_TYPE;
-                else
-                   sub_node->type = FLOAT_TYPE;
-            }
-            else sub_node->type = VAR_TYPE;
-            sub_node->value = std::move(lexer->getSubRealString(word_data.start, word_data.end));
-            node->list.emplace_back(std::move(sub_node));
-            block.emplace_back(std::move(node));
+            if(isInteger(lexer->peekNextToken()))
+                node->list.emplace_back(std::move(parseLiteral()));
+            else error(lexer->peekNextToken(), "unsupported return expression data");
+            block->list.emplace_back(std::move(node));
         }
+        else if (isDataType(current_token))
+            block->list.emplace_back(std::move(parseVar(&current_token)));
     }
-
-    return std::move(block);   
+    if(current_token == T_R_SQUIGGLY) lexer->skipNextToken();
+    return std::move(block);
 }
 
 const ASTNode* Parser::parse() noexcept
 {
     ASTRoot* root = new ASTRoot();
-    bool save_word = false;
-    std::string_view word;
-    while(lexer->eof())
+    while(lexer->eot())
     {
-        if(!save_word)
-            word = getNextWord();
-        else save_word = false;
-        auto hash = getHash(word);
-
-        if(isKeyword(word))
+        lexToken& current_token = lexer->getNextToken();
+        if(current_token == T_FUNC)
         {
-            if(hash == keywords_lookup[0])
+            if(!isValidName(lexer->peekNextToken()))
+                error(lexer->peekNextToken(),"this is not a valid function name");
+            ASTFuncDef* node = new ASTFuncDef(lexer->getNextToken().extra_data);
+            if(lexer->peekNextToken() != T_L_CURLY)
+                error(lexer->peekNextToken(),"this is not a valid function args opener");
+            node->args = std::move(parseArgs());
+            if(lexer->peekNextToken() != T_SUB && lexer->peekNextToken(1) != T_L_ARROW)
             {
-                auto name = getNextWord();
-                if(isKeyword(name))
-                    error("tried to use a keyword as a function name");
-                if(isValidName())
-                    error(std::string("the name of function '" + lexer->getSubRealString(word_data.start,word_data.end) + "' is not a valid name").c_str());
-                auto* node = new ASTFuncDef(std::move(lexer->getSubRealString(word_data.start, word_data.end)));
-                if(getNextWord() != "(")
-                    error("missing syntax for function args");
-                node->args = std::move(parseArgs());
-                auto returner = getNextWord();
-                auto returner2 = getNextWord();
-                if(returner != "-" || returner2 != ">")
-                    error("missing syntax for function return value");
-                node->return_type = getTypeID();
-                if(getNextWord() != "{")
-                    error("missing syntax for function args");
-                node->body = std::move(parseBlock());
-                root->children.emplace_back(std::move(node));
+                warn(lexer->peekNextToken(), "no return type provided default to void");
+                node->return_type = VOID_TYPE;
             }
-    
-            else error("unexpected keyword");
-        }
-        else if(hash == keywords_lookup[2] || hash == keywords_lookup[3] || hash == keywords_lookup[4] || 
-                hash == keywords_lookup[5] || hash == keywords_lookup[6] || hash == keywords_lookup[7] ||
-                hash == keywords_lookup[8] || hash == keywords_lookup[9] || hash == keywords_lookup[10]||
-                hash == keywords_lookup[11]|| hash == keywords_lookup[12]|| hash == keywords_lookup[13]|| 
-                hash == keywords_lookup[14]|| hash == keywords_lookup[15]|| hash == keywords_lookup[16])
-        {
-            ASTExpression* node = new ASTExpression();
-            node->type = ASTE_VAR_DEFINED;
-            auto name = getNextWord();
-            if(isKeyword(name))
-                error("tried to use a keyword as a variable name");
-            if(isValidName())
-                error(std::string("the name of variable '" + lexer->getSubRealString(word_data.start,word_data.end) + "' is not a valid name").c_str());
-            node->name = std::move(lexer->getSubRealString(word_data.start, word_data.end));
-            word = getNextWord();
-            if(word != "=")
+            else
             {
-                save_word = true;
-                auto* sub_node = new ASTLiteral();
-                sub_node->data_type = getFromHash(hash);
-                switch (sub_node->data_type)
-                {
-                    case VOID_TYPE:{
-                        error("tried to use void for variable this type is only allowed as a function return type");
-                    }
-                    case INT8_TYPE:
-                    case INT16_TYPE:
-                    case INT32_TYPE:
-                    case INT64_TYPE:
-                    case INT128_TYPE:
-                    case UINT8_TYPE:
-                    case UINT16_TYPE:
-                    case UINT32_TYPE:
-                    case UINT64_TYPE:
-                    case UINT128_TYPE: {
-                        sub_node->value = "0";
-                        break;
-                    }
-                    case FLOAT32_TYPE:
-                    case FLOAT64_TYPE:
-                    case FLOAT128_TYPE: {
-                        sub_node->value = "0.0";
-                        break;
-                    }
-                default:
-                    error("used a type supported by the language");
-                }
-                node->list.emplace_back(std::move(sub_node));
+                lexer->skipNextToken();
+                lexer->skipNextToken();
+                current_token = lexer->getNextToken();
+                if(!isDataType(current_token))
+                    error(current_token,"this is not a supported data type");
+                node->return_type = std::move(parseDataType(current_token));
             }
-            else if(word == "=")
-            {
-                auto* sub_node = new ASTLiteral();
-                sub_node->data_type = getFromHash(hash);
-                getNextWord(false);
-                sub_node->value = std::move(lexer->getSubRealString(word_data.start, word_data.end));
-                node->list.emplace_back(std::move(sub_node));
-            }
+            if(lexer->peekNextToken() != T_L_SQUIGGLY)
+                error(lexer->peekNextToken(),"this is not a valid function block opener");
+            node->body = std::move(parseBlock());
             root->children.emplace_back(std::move(node));
         }
-        else error("invalid syntax");
+        else if (isDataType(current_token))
+            root->children.emplace_back(std::move(parseVar(&current_token)));
+        else error(current_token,"this is not a valid in this scope");
     }
     return std::move(root);
 }

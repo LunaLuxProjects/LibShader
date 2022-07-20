@@ -1,218 +1,130 @@
-#include "Lexer.h"
-#include <cstring>
+#include "Parser.h"
 
-bool LexStateMachine::isOp(const char& c) noexcept
+char Lexer::getNextChar() noexcept
 {
-    switch(c)
+    return source[std::min<size>(index++,source.size())];
+}
+
+char Lexer::peekNextChar() const noexcept
+{
+    return source[std::min<size>(index,source.size())];
+}
+
+bool Lexer::_break(const char c) noexcept
+{
+    if(!eof()) return true;
+    switch (c)
     {
+        case '+':
         case '&':
-        case '!':
+        case '%':
+        case '/':
+        case '*':
+        case '-':
+        case '=':
+        case ' ':
+        case '\n':
         case '(':
         case ')':
         case '{':
         case '}':
         case '[':
         case ']':
+        case ':':
         case ';':
         case ',':
-        case '>':
-        case '<':
-        case '+':
-        case '-':
-        case '*':
-        case '/':
-        case '%':
-        case '^':
-        case ':':
-        case '#':
-        case '.': {
-            current_state = State::OP_MODE;
-            did_state_change = true;
+        case '.': 
+        case '\"':
+        case '\'':
             return true;
-        }
-        default: 
+        default:
             return false;
     }
 }
-bool LexStateMachine::isWhitespace(const char& c) noexcept
+
+GmlSpan Lexer::parseSpanNextToken() noexcept
 {
-    switch(c)
+    uint64 start = index;
+    while (eof())
     {
-        case ' ':
-        case '\n':
-        case '\r':
-        case '\t': {
-            current_state = State::WHITESPACE_MODE;
-            did_state_change = true;
-            return true;
-        }
-        default: return false;
+        if(_break(getNextChar())) break;
+        if(_break(peekNextChar())) break;
     }
+    uint64 offset = index;
+    return {start,offset};
 }
 
-void LexStateMachine::handleState(const char& c) noexcept
+Lexer::Lexer(std::string source_in)
 {
-    did_state_change = false;
-    if(c == '\n' && current_state != State::STRING_MODE)
-        line++;
-    switch (current_state)
+    source = std::move(source_in);
+    uint64 line = 0;
+    
+    const size reject_lookup[] = 
     {
-        case State::LETTER_MODE: {
-            if(isOp(c))
-                return;
-            if(isWhitespace(c))
-                return;
-            if(std::isdigit(c))
-            {
-                current_state = State::NUMBER_MODE;
-                did_state_change = true;
-                return;
-            }
-            if(c == '\"' || c == '\'')
-            {
-                current_state = State::STRING_MODE;
-                did_state_change = true;
-                return;
-            }
-            return;
-        }
-        case State::STRING_MODE: {
-            if(c == '\"' || c == '\'')
-            {
-                current_state = State::LETTER_MODE;
-                did_state_change = true;
-                return;
-            }
-            return;
-        }
-        case State::OP_MODE: {
-            if(isWhitespace(c))
-                return;
-            if(std::isalpha(c))
-            {
-                current_state = State::LETTER_MODE;
-                did_state_change = true;
-                return;
-            }
-            if(std::isdigit(c))
-            {
-                current_state = State::NUMBER_MODE;
-                did_state_change = true;
-                return;
-            }
-            if(c == '\"' || c == '\'')
-            {
-                current_state = State::STRING_MODE;
-                did_state_change = true;
-                return;
-            }
-            return;
-        }
-        case State::NUMBER_MODE: {
-            if(isWhitespace(c))
-                return;
-            if(isOp(c))
-                return;
-            if(std::isalpha(c))
-            {
-                current_state = State::LETTER_MODE;
-                did_state_change = true;
-                return;
-            }
-            if(c == '\"' || c == '\'')
-            {
-                current_state = State::STRING_MODE;
-                did_state_change = true;
-                return;
-            }
-            return;
-        }
-        case State::WHITESPACE_MODE: {
-            if(isOp(c))
-                return;
-            if(std::isdigit(c))
-            {
-                current_state = State::NUMBER_MODE;
-                did_state_change = true;
-                return;
-            }
-            if(std::isalpha(c))
-            {
-                current_state = State::LETTER_MODE;
-                did_state_change = true;
-                return;
-            }
-            if(c == '\"' || c == '\'')
-            {
-                current_state = State::STRING_MODE;
-                did_state_change = true;
-                return;
-            }
-        }
-    }
-}
-
-const bool LexStateMachine::_break(const char& next_c) noexcept 
-{ 
-    switch (current_state)
+        std::hash<std::string>{}(" "),
+        std::hash<std::string>{}("\n"),
+        std::hash<std::string>{}("\r"),
+        std::hash<std::string>{}("\t"),
+        std::hash<std::string>{}(";")
+    };
+    const std::tuple<size,LexTokenEnum> lookup[] = 
     {
-    case State::LETTER_MODE: {
-        handleState(next_c);
-        if(did_state_change)
-            return true;
-        return false;
-    }
-    case State::STRING_MODE: {
-        handleState(next_c);
-        return false;
-    }
-    case State::OP_MODE: {
-        handleState(next_c);
-        return true;
-    }
-    case State::NUMBER_MODE: {
-        handleState(next_c);
-        if(did_state_change)
-            return true;
-        return false;
-    }
-    case State::WHITESPACE_MODE: {
-        handleState(next_c);
-        return true;
-    }
-    default: return false;
-    }
-}
+        {std::hash<std::string>{}("func"),T_FUNC},
+        {std::hash<std::string>{}("ret"),T_RET},
+        {std::hash<std::string>{}("{"),T_L_SQUIGGLY},
+        {std::hash<std::string>{}("}"),T_R_SQUIGGLY},
+        {std::hash<std::string>{}("("),T_L_CURLY},
+        {std::hash<std::string>{}(")"),T_R_CURLY},
+        {std::hash<std::string>{}(","),T_COMMA},
+        {std::hash<std::string>{}("."),T_DOT},
+        {std::hash<std::string>{}("+"),T_ADD},
+        {std::hash<std::string>{}("-"),T_SUB},
+        {std::hash<std::string>{}("/"),T_DIV},
+        {std::hash<std::string>{}("*"),T_MUL},
+        {std::hash<std::string>{}("="),T_EQUAL},
+        {std::hash<std::string>{}("and"),T_AND},
+        {std::hash<std::string>{}("or"),T_OR},
+        {std::hash<std::string>{}(">"),T_L_ARROW},
+        {std::hash<std::string>{}("<"),T_R_ARROW},
+        {std::hash<std::string>{}("%"),T_MODULO},
+        {std::hash<std::string>{}("\""),T_QUOTE},
+        {std::hash<std::string>{}("\'"),T_SINGLE_LETTER_QUOTE},
+    };
 
-const Lex LexStateMachine::getLexWord()
-{
-    Lex lex;
-    lex.start = index;
-    [[unlikely]]if(index == 0)
-        (void)_break(source[0]);
-
-    while(index < source_size)
+    while(eof())
     {
-        if(_break(source[std::min<uint64>((source_size - 1),(index++) + 1)]))
-            break;
+        GmlSpan span = parseSpanNextToken();
+        size view = std::hash<std::string>{}(source.substr(span.start, std::max<size>(1,span.end - span.start)));
+        bool found = false;
+        for(auto& item:reject_lookup)
+        {
+            if(item == view)
+            {
+                found = true;
+                break;
+            }
+        }
+        if(view == reject_lookup[1]) line++;
+        if(found) continue;
+        lexToken token;
+        token.line = line;
+        token.span = std::move(span);
+            
+        for(auto& item:lookup)
+        {
+            if(std::get<0>(item) == view)
+            {
+                token.token = std::get<1>(item);
+                found = true;
+                break;
+            }
+        }
+        if(!found)
+        {
+            token.token = T_IDENTIFIER;
+            token.extra_data = std::move(source.substr(span.start, std::max<size>(1,span.end - span.start)));
+        }
+        tokens.emplace_back(std::move(token));
     }
-    lex.line = line;
-    lex.end = index;
-    if(getSubString(lex.start, lex.end) == " ")
-        lex = getLexWord();
-    return std::move(lex);   
-}
-
-const std::string_view LexStateMachine::getSubString(const uint64 start, const uint64 end) noexcept
-{
-    return source.substr(start, std::max<const uint64>(end - start,1));
-}
-
-const std::string LexStateMachine::getSubRealString(const uint64 start,const uint64 end) noexcept
-{
-    std::string result;
-    size true_size =  std::max<uint64>(end - start,1) + start;
-    for(size i = start; i < true_size; i++) 
-        result += source.at(i);
-    return std::move(result);
-}
+    index = 0;
+};

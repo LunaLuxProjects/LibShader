@@ -38,6 +38,6 @@ typedef struct glmErrorOrData
     glmErrorOrData(std::string data_msg) : data_msg(data_msg){};
 } glmComplierError;
 
-EXPORT_DLL const glmErrorOrData compileToSpirv(std::vector<std::string>,std::string&);
-EXPORT_DLL const glmErrorOrData compileToX86(std::vector<std::string>,std::string&);
-EXPORT_DLL const glmErrorOrData compileToAST(std::vector<std::string>,std::string&);
+EXPORT_DLL const glmErrorOrData compileToSpirv(std::vector<std::string>,std::string);
+EXPORT_DLL const glmErrorOrData compileToX86(std::vector<std::string>,std::string);
+EXPORT_DLL const glmErrorOrData compileToAST(std::vector<std::string>,std::string);

@@ -51,11 +51,11 @@ int main(int argc, char **argv)
 
     if(target == "x86_64")
     {
-        data = compileToX86(flags,str);
+        data = compileToX86(flags,std::move(str));
     }
     else if(target == "spirv")
     {
-        data = compileToSpirv(flags,str);
+        data = compileToSpirv(flags,std::move(str));
     }
     else
     {
