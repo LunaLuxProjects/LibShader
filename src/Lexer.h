@@ -1,5 +1,5 @@
 #pragma once
-#include <LibShader.h>
+#include <LibShader/Compiler.h>
 #include <string>
 #include <vector>
 #include <tuple>

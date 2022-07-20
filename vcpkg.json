@@ -1,9 +1,0 @@
-{
-    "name": "libshader",
-    "version-string": "latest",
-    "dependencies": [
-        "argparse",
-        "rapidjson",
-        "gtest"
-    ]
-}

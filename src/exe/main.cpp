@@ -1,4 +1,4 @@
-#include <LibShader.h>
+#include <LibShader/Compiler.h>
 #include <argparse/argparse.hpp>
 #include <string>
 #include <functional>

@@ -1,0 +1,12 @@
+[submodule "Includes/lstd"]
+	path = Includes/lstd
+	url = https://github.com/LunaLuxProjects/LibStd.git
+[submodule "googletest"]
+	path = googletest
+	url = https://github.com/google/googletest.git
+[submodule "argparse"]
+	path = argparse
+	url = https://github.com/p-ranav/argparse.git
+[submodule "rapidjson"]
+	path = rapidjson
+	url = https://github.com/Tencent/rapidjson.git

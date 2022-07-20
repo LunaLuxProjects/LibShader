@@ -1,5 +1,5 @@
 {
-    "version": 4,
+    "version": 3,
     "cmakeMinimumRequired": {
         "major": 3,
         "minor": 22,
@@ -11,23 +11,17 @@
             "description": "",
             "displayName": "",
             "inherits": [],
-            "binaryDir": "${sourceDir}/${presetName}",
-            "cacheVariables": {
-                "CMAKE_TOOLCHAIN_FILE": {
-                    "type": "FILEPATH",
-                    "value": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake"
-                },
-                "CMAKE_EXPORT_COMPILE_COMMANDS" : "1",
-                "CMAKE_BUILD_TYPE" : "Debug",
-                "VCPKG_BUILD_TYPE" : "Release"
-
-            }
+            "binaryDir": "${sourceDir}/${presetName}"
         },
         {
             "name": "debug-linux",
             "displayName": "linux",
             "inherits": ["base"],
-            "generator": "Ninja Multi-Config"
+            "generator": "Ninja Multi-Config",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS" : "1",
+                "CMAKE_SYSTEM_NAME": "Linux"
+            }
         },
         {
             "name": "debug-osx",
@@ -35,17 +29,42 @@
             "inherits": ["base"],
             "generator": "xcode"
         },
-        {
-            "name": "debug-windows",
-            "displayName": "windows",
-            "inherits": ["base"],
-            "generator": "Visual Studio 17 2022"
+      {
+        "name": "debug-windows",
+        "displayName": "windows",
+        "inherits": [ "base" ],
+        "generator": "Visual Studio 17 2022",
+        "cacheVariables": {
+          "CMAKE_EXPORT_COMPILE_COMMANDS": "1",
+          "CMAKE_BUILD_TYPE": "Debug",
+          "CMAKE_SYSTEM_NAME": "Windows"
         }
+      },
+      {
+        "name": "debug-windows-store",
+        "displayName": "windows-store",
+        "inherits": [ "base" ],
+        "generator": "Visual Studio 17 2022",
+        "cacheVariables": {
+          "CMAKE_EXPORT_COMPILE_COMMANDS": "1",
+          "CMAKE_BUILD_TYPE": "Debug",
+          "CMAKE_SYSTEM_NAME": "WindowsStore",
+          "CMAKE_SYSTEM_VERSION":  "10.0"
+        }
+      }
     ],
-    "buildPresets": [
-        {
-            "name": "default",
-            "configurePreset": "default"
-        }
-    ]
+  "buildPresets": [
+    {
+      "name": "windows",
+      "configurePreset": "debug-windows"
+    },
+    {
+      "name": "windows-store",
+      "configurePreset": "debug-windows-store"
+    },
+    {
+      "name": "linux",
+      "configurePreset": "debug-linux"
+    }
+  ]
 }
