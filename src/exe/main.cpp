@@ -1,5 +1,7 @@
 #include <LibShader/Compiler.h>
 #include <argparse/argparse.hpp>
+#include <lstd/String.h>
+#include <lstd/Util.h>
 #include <string>
 #include <functional>
 #include <fstream>
@@ -29,7 +31,7 @@ int main(int argc, char **argv)
     std::ifstream t;
     try 
     {
-        t = std::ifstream(program.get<std::string>("-s").c_str());
+        t = std::ifstream(program.get<lstd::string>("-s").c_str());
     }
     catch (const std::runtime_error& err) 
     {
@@ -43,19 +45,19 @@ int main(int argc, char **argv)
     t.seekg(0, std::ios::beg);
     str.assign((std::istreambuf_iterator<char>(t)),std::istreambuf_iterator<char>());
 
-
+    lstd::string lstr = str.c_str();
     glmErrorOrData data;
-    std::string target = program.get<std::string>("-t");
-    std::vector<std::string> flags;
+    lstd::string target = program.get<lstd::string>("-t");
+    std::vector<lstd::string> flags;
 
 
     if(target == "x86_64")
     {
-        data = compileToX86(flags,std::move(str));
+        data = compileToX86(flags,lstd::move(lstr));
     }
     else if(target == "spirv")
     {
-        data = compileToSpirv(flags,std::move(str));
+        data = compileToSpirv(flags,lstd::move(lstr));
     }
     else
     {
