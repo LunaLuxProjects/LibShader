@@ -1,69 +1,74 @@
 #include "Parser.h"
-#include <algorithm>
+#include <lstd/LookUpTable.h>
+#include <lstd/Util.h>
+lstd::string x ("test");
 
-const size keyword_lookup[] = 
+const data_size keyword_lookup[] = 
 {
-    std::hash<std::string>{}("func"),
-    std::hash<std::string>{}("ret"),
-    std::hash<std::string>{}("and"),
-    std::hash<std::string>{}("or")
+    lstd::hash<lstd::string>{}("func"),
+    lstd::hash<lstd::string>{}("ret"),
+    lstd::hash<lstd::string>{}("and"),
+    lstd::hash<lstd::string>{}("or")
 };
 
-const std::tuple<size,ASTDataType> data_type_lookup[] = 
-{
-    {std::hash<std::string>{}("uint8"),UINT8_TYPE},
-    {std::hash<std::string>{}("uint16"),UINT16_TYPE},
-    {std::hash<std::string>{}("uint32"),UINT32_TYPE},
-    {std::hash<std::string>{}("uint64"),UINT64_TYPE},
-    {std::hash<std::string>{}("uint128"),UINT128_TYPE},
-    {std::hash<std::string>{}("int8"),INT8_TYPE},
-    {std::hash<std::string>{}("int16"),INT16_TYPE},
-    {std::hash<std::string>{}("int32"),INT32_TYPE},
-    {std::hash<std::string>{}("int64"),INT64_TYPE},
-    {std::hash<std::string>{}("int128"),INT128_TYPE},
-    {std::hash<std::string>{}("float32"),FLOAT32_TYPE},
-    {std::hash<std::string>{}("float64"),FLOAT64_TYPE},
-    {std::hash<std::string>{}("float128"),FLOAT128_TYPE}
+const lstd::ReadOnlyLookupTable<data_size, ASTDataType> data_type_lookup = {
+    {lstd::hash<lstd::string>{}("uint8"),UINT8_TYPE},
+    {lstd::hash<lstd::string>{}("uint16"),UINT16_TYPE},
+    {lstd::hash<lstd::string>{}("uint32"),UINT32_TYPE},
+    {lstd::hash<lstd::string>{}("uint64"),UINT64_TYPE},
+    {lstd::hash<lstd::string>{}("int8"),INT8_TYPE},
+    {lstd::hash<lstd::string>{}("int16"),INT16_TYPE},
+    {lstd::hash<lstd::string>{}("int32"),INT32_TYPE},
+    {lstd::hash<lstd::string>{}("int64"),INT64_TYPE},
+    {lstd::hash<lstd::string>{}("float32"),FLOAT32_TYPE},
+    {lstd::hash<lstd::string>{}("float64"),FLOAT64_TYPE},
 };
 
 bool Parser::isValidName(const lexToken& token) noexcept
 {
-    size view = std::hash<std::string>{}(lexer->refSource().substr(token.span.start, std::max<size>(1,token.span.end - token.span.start)));
+    data_size view = lstd::hash<lstd::string>{}(
+        lexer->refSource().substr(token.span.start, lstd::max<data_size>(1, token.span.end - token.span.start)));
     for(auto& item:keyword_lookup)
     {
         if(item == view) return false;
     }
     for(auto& item:data_type_lookup)
     {
-        if(std::get<0>(item) == view) return false;
+        if(item == view) return false;
     }
     return true;
 }
 
 bool Parser::isDataType(const lexToken& token) noexcept
 {
-    size view = std::hash<std::string>{}(lexer->refSource().substr(token.span.start, std::max<size>(1,token.span.end - token.span.start)));
+    data_size view = lstd::hash<lstd::string>{}(
+        lexer->refSource().substr(token.span.start, lstd::max<data_size>(1, token.span.end - token.span.start)));
     for(auto& item:data_type_lookup)
     {
-        if(std::get<0>(item) == view) return true;
+        if(item == view) return true;
     }
     return false;
 }
 
 ASTDataType Parser::parseDataType(const lexToken& token) noexcept
 {
-     size view = std::hash<std::string>{}(lexer->refSource().substr(token.span.start, std::max<size>(1,token.span.end - token.span.start)));
+    data_size view = lstd::hash<lstd::string>{}(
+        lexer->refSource().substr(token.span.start, lstd::max<data_size>(1, token.span.end - token.span.start)));
      for(auto& item:data_type_lookup)
      {
-        if(std::get<0>(item) == view) return std::get<1>(item);
+        if(item == view) return item.value;
      }
      return NOT_DETERMINED_TYPE;
 }
 
 bool Parser::isInteger(const lexToken& token) noexcept
 {
-    std::string s = lexer->refSource().substr(token.span.start, std::max<size>(1,token.span.end - token.span.start));
-    return std::all_of(s.begin(), s.end(),[](const int8 c) {return std::isdigit(c);});
+    lstd::string str =  lexer->refSource().substr(token.span.start, lstd::max<data_size>(1, token.span.end - token.span.start));
+    bool found = false;
+    for (const char l :str)
+        if (!std::isdigit(l))
+            found = true;
+    return !found;
 }
 
 void Parser::warn(const lexToken& tok,const char* msg_text) noexcept
@@ -109,7 +114,7 @@ ASTLiteral* Parser::parseLiteral() noexcept
     {
         if(!isInteger(current_token))
             error(current_token,"this is not a valid numeric value");
-        literal->value = std::move(lexer->refSource().substr(current_token.span.start, std::max<size>(1,current_token.span.end - current_token.span.start)));
+        literal->value = lexer->refSource().substr(current_token.span.start, lstd::max<data_size>(1,current_token.span.end - current_token.span.start));
         if(lexer->peekNextToken() == T_DOT)
         {
             lexer->skipNextToken();
@@ -117,15 +122,16 @@ ASTLiteral* Parser::parseLiteral() noexcept
             if(!isInteger(current_token))
                 error(current_token,"this is not a valid numeric value");
             literal->value += '.';
-            literal->value += std::move(lexer->refSource().substr(current_token.span.start, std::max<size>(1,current_token.span.end - current_token.span.start)));
+            literal->value += lexer->refSource().substr(
+                current_token.span.start, lstd::max<data_size>(1, current_token.span.end - current_token.span.start));
         }
-        else if(literal->data_type == FLOAT32_TYPE || literal->data_type == FLOAT64_TYPE || literal->data_type == FLOAT128_TYPE)
+        else if(literal->data_type == FLOAT32_TYPE || literal->data_type == FLOAT64_TYPE)
         {
             literal->value += ".0";
         }
     }
     else error(current_token,"we don't have string support yet");
-    return std::move(literal);
+    return lstd::move(literal);
 }
 
 const ASTExpression* Parser::parseVar(lexToken* current_token) noexcept
@@ -138,7 +144,7 @@ const ASTExpression* Parser::parseVar(lexToken* current_token) noexcept
     if(!isValidName(*current_token = lexer->getNextToken()))
         error((*current_token),"this is not a valid param name");
 
-    node->extra_data = std::move(lexer->refSource().substr((*current_token).span.start, std::max<size>(1,(*current_token).span.end - (*current_token).span.start)));
+    node->extra_data = lexer->refSource().substr((*current_token).span.start, lstd::max<data_size>(1, (*current_token).span.end - (*current_token).span.start));
 
     if(lexer->peekNextToken() != T_EQUAL)
     {
@@ -153,11 +159,11 @@ const ASTExpression* Parser::parseVar(lexToken* current_token) noexcept
     else
     {
         lexer->skipNextToken();
-        literal = std::move(parseLiteral());
+        literal = parseLiteral();
         literal->data_type = data_type;
     }
-    node->list.emplace_back(std::move(literal));
-    return std::move(node);
+    node->list.emplace_back(lstd::move(literal));
+    return lstd::move(node);
 }
 
 const ASTExpression* Parser::parseArgs() noexcept
@@ -171,18 +177,18 @@ const ASTExpression* Parser::parseArgs() noexcept
             error(current_token,"this is not a supported data type");
         
         ASTLiteral* literal = new ASTLiteral();
-        literal->data_type = std::move(parseDataType(current_token));
+        literal->data_type =parseDataType(current_token);
 
         if(!isValidName((current_token = lexer->getNextToken())))
             error(current_token,"this is not a valid param name");
 
-        literal->value = lexer->refSource().substr(current_token.span.start, std::max<size>(1,current_token.span.end - current_token.span.start));
+        literal->value = lexer->refSource().substr(current_token.span.start, lstd::max<data_size>(1,current_token.span.end - current_token.span.start));
 
-        expression->list.emplace_back(std::move(literal));
+        expression->list.emplace_back(lstd::move(literal));
 
         if(lexer->peekNextToken() != T_COMMA) lexer->skipNextToken();
     }
-    return std::move(expression);
+    return lstd::move(expression);
 }
 
 const ASTBlock* Parser::parseBlock() noexcept
@@ -196,15 +202,15 @@ const ASTBlock* Parser::parseBlock() noexcept
             ASTExpression* node = new ASTExpression();
             node->type = ASTE_RETURN;
             if(isInteger(lexer->peekNextToken()))
-                node->list.emplace_back(std::move(parseLiteral()));
+                node->list.emplace_back(parseLiteral());
             else error(lexer->peekNextToken(), "unsupported return expression data");
-            block->list.emplace_back(std::move(node));
+            block->list.emplace_back(lstd::move(node));
         }
         else if (isDataType(current_token))
-            block->list.emplace_back(std::move(parseVar(&current_token)));
+            block->list.emplace_back(parseVar(&current_token));
     }
     if(current_token == T_R_SQUIGGLY) lexer->skipNextToken();
-    return std::move(block);
+    return lstd::move(block);
 }
 
 const ASTNode* Parser::parse() noexcept
@@ -220,7 +226,7 @@ const ASTNode* Parser::parse() noexcept
             ASTFuncDef* node = new ASTFuncDef(lexer->getNextToken().extra_data);
             if(lexer->peekNextToken() != T_L_CURLY)
                 error(lexer->peekNextToken(),"this is not a valid function args opener");
-            node->args = std::move(parseArgs());
+            node->args = parseArgs();
             if(lexer->peekNextToken() != T_SUB && lexer->peekNextToken(1) != T_L_ARROW)
             {
                 warn(lexer->peekNextToken(), "no return type provided default to void");
@@ -233,17 +239,17 @@ const ASTNode* Parser::parse() noexcept
                 current_token = lexer->getNextToken();
                 if(!isDataType(current_token))
                     error(current_token,"this is not a supported data type");
-                node->return_type = std::move(parseDataType(current_token));
+                node->return_type = parseDataType(current_token);
             }
             if(lexer->peekNextToken() != T_L_SQUIGGLY)
                 error(lexer->peekNextToken(),"this is not a valid function block opener");
-            node->body = std::move(parseBlock());
-            root->children.emplace_back(std::move(node));
+            node->body = parseBlock();
+            root->children.emplace_back(lstd::move(node));
         }
         else if (isDataType(current_token))
-            root->children.emplace_back(std::move(parseVar(&current_token)));
+            root->children.emplace_back(parseVar(&current_token));
         else error(current_token,"this is not a valid in this scope");
     }
-    return std::move(root);
+    return lstd::move(root);
 }
 

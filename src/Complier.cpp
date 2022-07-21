@@ -1,7 +1,6 @@
 #include <LibShader/Compiler.h>
 #include "Parser.h"
-#include <iostream>
-#include <chrono>
+#include <lstd/Util.h>
 using namespace rapidjson;
 
 const char * idToString(const ASTTypeID& id) noexcept
@@ -29,15 +28,12 @@ const char * idToStringT(const ASTDataType& id) noexcept
     case INT16_TYPE: return "int16";
     case INT32_TYPE: return "int32";
     case INT64_TYPE: return "int64";
-    case INT128_TYPE: return "int128";
     case UINT8_TYPE: return "uint8";
     case UINT16_TYPE: return "uint16";
     case UINT32_TYPE: return "uint32";
     case UINT64_TYPE: return "uint64";
-    case UINT128_TYPE: return "uint128";
     case FLOAT32_TYPE: return "float32";
     case FLOAT64_TYPE: return "float64";
-    case FLOAT128_TYPE: return "float128";
     default: return "unknown";
     }
 }
@@ -156,12 +152,12 @@ void writeBranch(T* writer,const ASTNode* node)
     writer->EndObject();
 }
 
-glmErrorOrData sharedStages(std::string source)
+glmErrorOrData sharedStages(lstd::string source)
 { 
     StringBuffer buffer;
     PrettyWriter writer(buffer);
     //auto start = std::chrono::steady_clock::now();
-    Parser p(std::move(source));
+    Parser p(lstd::move<lstd::string>(source));
     const ASTNode* ast = p.parse();
     //auto end = std::chrono::steady_clock::now();
     if(p.hadError())
@@ -171,11 +167,11 @@ glmErrorOrData sharedStages(std::string source)
 }
 
 
-const glmErrorOrData compileToAST(std::vector<std::string>,std::string source)
+const glmErrorOrData compileToAST(std::vector<lstd::string>,lstd::string source)
 {
     StringBuffer s;
     Writer<StringBuffer> writer(s);
-    Parser p(std::move(source));
+    Parser p(lstd::move<lstd::string>(source));
     const ASTNode* ast = p.parse();
     if(p.hadError())
         return glmErrorOrData(true,p.getMsg());
@@ -183,18 +179,18 @@ const glmErrorOrData compileToAST(std::vector<std::string>,std::string source)
     return glmErrorOrData(s.GetString());
 }
 
-const glmErrorOrData compileToSpirv(std::vector<std::string>,std::string source)
+const glmErrorOrData compileToSpirv(std::vector<lstd::string>,lstd::string source)
 {
-    auto s  = sharedStages(std::move(source));
-    if(s.isError)
-        std::cout << s.error_msg << std::endl;
+    auto s = sharedStages(lstd::move<lstd::string>(source));
+    if (s.isError)
+        printf("LibShader: %s \n", s.error_msg.c_str());
     else
-        std::cout << s.data_msg << std::endl;
+        printf("LibShader: %s \n", s.data_msg.c_str());
     return glmErrorOrData(true,"not implemented");
 }
 
-const glmErrorOrData compileToX86(std::vector<std::string>,std::string source)
+const glmErrorOrData compileToX86(std::vector<lstd::string>,lstd::string source)
 {
-    sharedStages(std::move(source));
+    sharedStages(lstd::move<lstd::string>(source));
     return glmErrorOrData(true,"not implemented");
 }

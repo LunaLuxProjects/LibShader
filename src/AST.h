@@ -1,7 +1,7 @@
 #pragma once
 #include <lstd/DataType.h>
 #include <vector>
-#include <string>
+#include <lstd/String.h>
 
 typedef enum ASTTypeID
 {
@@ -63,7 +63,7 @@ struct ASTExpression : public ASTNode
 {
     std::vector<const ASTNode *> list;
     ASTExpressionType type;
-    std::string extra_data;
+    lstd::string extra_data = "";
     ASTTypeID getTypeID() const noexcept override { return AST_EXPRESSION;}
 };
 
@@ -75,12 +75,12 @@ struct ASTBlock : public ASTNode
 
 struct ASTFuncDef : public ASTNode
 {
-    const std::string name;
-    const ASTExpression * args;
-    const ASTBlock * body;
-    ASTDataType return_type;
+    const lstd::string name = "";
+    const ASTExpression * args = nullptr;
+    const ASTBlock *body = nullptr;
+    ASTDataType return_type = NOT_DETERMINED_TYPE;
     ASTTypeID getTypeID() const noexcept override { return AST_FUNC_DEF;}
-    explicit ASTFuncDef(const std::string name_in): name(std::move(name_in)){}
+    explicit ASTFuncDef(const lstd::string name_in): name(name_in){}
 };
 
 
@@ -95,7 +95,7 @@ struct ASTBinaryExpression : public ASTNode
 
 struct ASTLiteral : public ASTNode
 {
-    std::string value;
+    lstd::string value = "";
     ASTDataType data_type = NOT_DETERMINED_TYPE;
     ASTTypeID getTypeID() const noexcept override { return AST_LITERAL;}
 };

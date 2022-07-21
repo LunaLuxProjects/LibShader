@@ -1,13 +1,17 @@
 #include "Parser.h"
+#include <lstd/LookUpTable.h>
+#include <lstd/Util.h>
+#include <string>
+std::string x ();
 
 char Lexer::getNextChar() noexcept
 {
-    return source[std::min<size>(index++,source.size())];
+    return source[lstd::min<data_size>(index++,source.size())];
 }
 
 char Lexer::peekNextChar() const noexcept
 {
-    return source[std::min<size>(index,source.size())];
+    return source[lstd::min<data_size>(index,source.size())];
 }
 
 bool Lexer::_break(const char c) noexcept
@@ -54,47 +58,47 @@ GmlSpan Lexer::parseSpanNextToken() noexcept
     return {start,offset};
 }
 
-Lexer::Lexer(std::string source_in)
+Lexer::Lexer(lstd::string source_in)
 {
-    source = std::move(source_in);
+    source =lstd::move(source_in);
     uint64 line = 0;
     
-    const size reject_lookup[] = 
+    const data_size reject_lookup[] = 
     {
-        std::hash<std::string>{}(" "),
-        std::hash<std::string>{}("\n"),
-        std::hash<std::string>{}("\r"),
-        std::hash<std::string>{}("\t"),
-        std::hash<std::string>{}(";")
+        lstd::hash<lstd::string>{}(" "),
+        lstd::hash<lstd::string>{}("\n"),
+        lstd::hash<lstd::string>{}("\r"),
+        lstd::hash<lstd::string>{}("\t"),
+        lstd::hash<lstd::string>{}(";")
     };
-    const std::tuple<size,LexTokenEnum> lookup[] = 
+    const lstd::ReadOnlyLookupTable<data_size, LexTokenEnum> lookup = 
     {
-        {std::hash<std::string>{}("func"),T_FUNC},
-        {std::hash<std::string>{}("ret"),T_RET},
-        {std::hash<std::string>{}("{"),T_L_SQUIGGLY},
-        {std::hash<std::string>{}("}"),T_R_SQUIGGLY},
-        {std::hash<std::string>{}("("),T_L_CURLY},
-        {std::hash<std::string>{}(")"),T_R_CURLY},
-        {std::hash<std::string>{}(","),T_COMMA},
-        {std::hash<std::string>{}("."),T_DOT},
-        {std::hash<std::string>{}("+"),T_ADD},
-        {std::hash<std::string>{}("-"),T_SUB},
-        {std::hash<std::string>{}("/"),T_DIV},
-        {std::hash<std::string>{}("*"),T_MUL},
-        {std::hash<std::string>{}("="),T_EQUAL},
-        {std::hash<std::string>{}("and"),T_AND},
-        {std::hash<std::string>{}("or"),T_OR},
-        {std::hash<std::string>{}(">"),T_L_ARROW},
-        {std::hash<std::string>{}("<"),T_R_ARROW},
-        {std::hash<std::string>{}("%"),T_MODULO},
-        {std::hash<std::string>{}("\""),T_QUOTE},
-        {std::hash<std::string>{}("\'"),T_SINGLE_LETTER_QUOTE},
+        {lstd::hash<lstd::string>{}("func"),T_FUNC},
+        {lstd::hash<lstd::string>{}("ret"),T_RET},
+        {lstd::hash<lstd::string>{}("{"),T_L_SQUIGGLY},
+        {lstd::hash<lstd::string>{}("}"),T_R_SQUIGGLY},
+        {lstd::hash<lstd::string>{}("("),T_L_CURLY},
+        {lstd::hash<lstd::string>{}(")"),T_R_CURLY},
+        {lstd::hash<lstd::string>{}(","),T_COMMA},
+        {lstd::hash<lstd::string>{}("."),T_DOT},
+        {lstd::hash<lstd::string>{}("+"),T_ADD},
+        {lstd::hash<lstd::string>{}("-"),T_SUB},
+        {lstd::hash<lstd::string>{}("/"),T_DIV},
+        {lstd::hash<lstd::string>{}("*"),T_MUL},
+        {lstd::hash<lstd::string>{}("="),T_EQUAL},
+        {lstd::hash<lstd::string>{}("and"),T_AND},
+        {lstd::hash<lstd::string>{}("or"),T_OR},
+        {lstd::hash<lstd::string>{}(">"),T_L_ARROW},
+        {lstd::hash<lstd::string>{}("<"),T_R_ARROW},
+        {lstd::hash<lstd::string>{}("%"),T_MODULO},
+        {lstd::hash<lstd::string>{}("\""),T_QUOTE},
+        {lstd::hash<lstd::string>{}("\'"),T_SINGLE_LETTER_QUOTE},
     };
 
     while(eof())
     {
         GmlSpan span = parseSpanNextToken();
-        size view = std::hash<std::string>{}(source.substr(span.start, std::max<size>(1,span.end - span.start)));
+        data_size view = lstd::hash<lstd::string>{}(source.substr(span.start, lstd::max<data_size>(1,span.end - span.start)));
         bool found = false;
         for(auto& item:reject_lookup)
         {
@@ -108,13 +112,13 @@ Lexer::Lexer(std::string source_in)
         if(found) continue;
         lexToken token;
         token.line = line;
-        token.span = std::move(span);
+        token.span =lstd::move(span);
             
         for(auto& item:lookup)
         {
-            if(std::get<0>(item) == view)
+            if(item == view)
             {
-                token.token = std::get<1>(item);
+                token.token = item.value;
                 found = true;
                 break;
             }
@@ -122,7 +126,7 @@ Lexer::Lexer(std::string source_in)
         if(!found)
         {
             token.token = T_IDENTIFIER;
-            token.extra_data = std::move(source.substr(span.start, std::max<size>(1,span.end - span.start)));
+            token.extra_data = source.substr(span.start, lstd::max<data_size>(1,span.end - span.start));
         }
         tokens.emplace_back(std::move(token));
     }

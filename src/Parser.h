@@ -20,7 +20,7 @@ class Parser
     void error(const lexToken&,const char*) noexcept;
     void warn(const lexToken&,const char*) noexcept;
     public:
-    explicit Parser(std::string source) noexcept : lexer(new Lexer(std::move(source))), writer(new rapidjson::PrettyWriter<rapidjson::StringBuffer>(msg))
+    explicit Parser(lstd::string source) noexcept : lexer(new Lexer(std::move(source))), writer(new rapidjson::PrettyWriter<rapidjson::StringBuffer>(msg))
     {
         writer->StartObject();
         writer->Key("List");
