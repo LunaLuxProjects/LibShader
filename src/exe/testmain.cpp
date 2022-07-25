@@ -85,6 +85,26 @@ TEST(AST,PARSE_VAR_INT64_NO_VALUE)
     EXPECT_STREQ(data.data_msg.c_str(),result);
 }
 
+TEST(AST,PARSE_VAR_FLOAT32_NO_VALUE)
+{
+    lstd::string source = "float32 x";
+    const char* result =  "{\"type\":\"Program\",\"body\":[{\"type\":\"Expression\",\"id\":\"VariableDefinition\",\"name\":\"x\",\"declarations\":[{\"type\":\"Literal\",\"data_type\":\"float32\",\"value\":\"0.0\"}]}],\"SourceType\":\"module\"}";
+    auto data = compileToAST(std::vector<lstd::string>(),lstd::move(source));
+    if(data.isError) printf("Compiler Test: %s", data.error_msg.c_str());
+    EXPECT_FALSE(data.isError);
+    EXPECT_STREQ(data.data_msg.c_str(),result);
+}
+
+TEST(AST,PARSE_VAR_FLOAT64_NO_VALUE)
+{
+    lstd::string source = "float64 x";
+    const char* result =  "{\"type\":\"Program\",\"body\":[{\"type\":\"Expression\",\"id\":\"VariableDefinition\",\"name\":\"x\",\"declarations\":[{\"type\":\"Literal\",\"data_type\":\"float64\",\"value\":\"0.0\"}]}],\"SourceType\":\"module\"}";
+    auto data = compileToAST(std::vector<lstd::string>(),lstd::move(source));
+    if(data.isError) printf("Compiler Test: %s", data.error_msg.c_str());
+    EXPECT_FALSE(data.isError);
+    EXPECT_STREQ(data.data_msg.c_str(),result);
+}
+
 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 TEST(AST,PARSE_VAR_UINT8_WITH_VALUE)
 {
@@ -160,6 +180,26 @@ TEST(AST,PARSE_VAR_INT64_WITH_VALUE)
 {
     lstd::string source = "int64 x = 20";
     const char* result =  "{\"type\":\"Program\",\"body\":[{\"type\":\"Expression\",\"id\":\"VariableDefinition\",\"name\":\"x\",\"declarations\":[{\"type\":\"Literal\",\"data_type\":\"int64\",\"value\":\"20\"}]}],\"SourceType\":\"module\"}";
+    auto data = compileToAST(std::vector<lstd::string>(),lstd::move(source));
+    if(data.isError) printf("Compiler Test: %s", data.error_msg.c_str());
+    EXPECT_FALSE(data.isError);
+    EXPECT_STREQ(data.data_msg.c_str(),result);
+}
+
+TEST(AST,PARSE_VAR_FLOAT32_WITH_VALUE)
+{
+    lstd::string source = "float32 x = 20.0";
+    const char* result =  "{\"type\":\"Program\",\"body\":[{\"type\":\"Expression\",\"id\":\"VariableDefinition\",\"name\":\"x\",\"declarations\":[{\"type\":\"Literal\",\"data_type\":\"float32\",\"value\":\"20.0\"}]}],\"SourceType\":\"module\"}";
+    auto data = compileToAST(std::vector<lstd::string>(),lstd::move(source));
+    if(data.isError) printf("Compiler Test: %s", data.error_msg.c_str());
+    EXPECT_FALSE(data.isError);
+    EXPECT_STREQ(data.data_msg.c_str(),result);
+}
+
+TEST(AST,PARSE_VAR_FLOAT64_WITH_VALUE)
+{
+    lstd::string source = "float64 x = 20.0";
+    const char* result =  "{\"type\":\"Program\",\"body\":[{\"type\":\"Expression\",\"id\":\"VariableDefinition\",\"name\":\"x\",\"declarations\":[{\"type\":\"Literal\",\"data_type\":\"float64\",\"value\":\"20.0\"}]}],\"SourceType\":\"module\"}";
     auto data = compileToAST(std::vector<lstd::string>(),lstd::move(source));
     if(data.isError) printf("Compiler Test: %s", data.error_msg.c_str());
     EXPECT_FALSE(data.isError);
@@ -262,6 +302,26 @@ TEST(AST,PARSE_MAIN_WITH_VAR_INT64_WITH_VALUE)
     EXPECT_STREQ(data.data_msg.c_str(),result);
 }
 
+TEST(AST,PARSE_MAIN_WITH_VAR_FLOAT32_WITH_VALUE)
+{
+    lstd::string source = "func main() -> int32 { float32 x = 30.0 ret 0}";
+    const char* result = "{\"type\":\"Program\",\"body\":[{\"type\":\"FunctionDef\",\"id\":\"main\",\"return_type\":\"int32\",\"parameters\":{\"type\":\"Expression\",\"id\":\"ParameterList\",\"declarations\":[]},\"body\":{\"type\":\"ExecutionBlock\",\"execution\":[{\"type\":\"Expression\",\"id\":\"VariableDefinition\",\"name\":\"x\",\"declarations\":[{\"type\":\"Literal\",\"data_type\":\"float32\",\"value\":\"30.0\"}]},{\"type\":\"Expression\",\"id\":\"ReturnType\",\"declarations\":[{\"type\":\"Literal\",\"data_type\":\"To Be Determined\",\"value\":\"0\"}]}]}}],\"SourceType\":\"module\"}";
+    auto data = compileToAST(std::vector<lstd::string>(),lstd::move(source));
+    if(data.isError) printf("Compiler Test: %s", data.error_msg.c_str());
+    EXPECT_FALSE(data.isError);
+    EXPECT_STREQ(data.data_msg.c_str(),result);
+}
+
+TEST(AST,PARSE_MAIN_WITH_VAR_FLOAT64_WITH_VALUE)
+{
+    lstd::string source = "func main() -> int32 { float64 x = 30.0 ret 0}";
+    const char* result = "{\"type\":\"Program\",\"body\":[{\"type\":\"FunctionDef\",\"id\":\"main\",\"return_type\":\"int32\",\"parameters\":{\"type\":\"Expression\",\"id\":\"ParameterList\",\"declarations\":[]},\"body\":{\"type\":\"ExecutionBlock\",\"execution\":[{\"type\":\"Expression\",\"id\":\"VariableDefinition\",\"name\":\"x\",\"declarations\":[{\"type\":\"Literal\",\"data_type\":\"float64\",\"value\":\"30.0\"}]},{\"type\":\"Expression\",\"id\":\"ReturnType\",\"declarations\":[{\"type\":\"Literal\",\"data_type\":\"To Be Determined\",\"value\":\"0\"}]}]}}],\"SourceType\":\"module\"}";
+    auto data = compileToAST(std::vector<lstd::string>(),lstd::move(source));
+    if(data.isError) printf("Compiler Test: %s", data.error_msg.c_str());
+    EXPECT_FALSE(data.isError);
+    EXPECT_STREQ(data.data_msg.c_str(),result);
+}
+
 TEST(AST,PARSE_MAIN_WITH_VAR_UINT8_WITHOUT_VALUE)
 {
     lstd::string source = "func main() -> int32 { uint8 x ret 0}";
@@ -342,8 +402,26 @@ TEST(AST,PARSE_MAIN_WITH_VAR_INT64_WITHOUT_VALUE)
     EXPECT_STREQ(data.data_msg.c_str(),result);
 }
 
+TEST(AST,PARSE_MAIN_WITH_VAR_FLOAT32_WITHOUT_VALUE)
+{
+    lstd::string source = "func main() -> int32 { float32 x ret 0}";
+    const char* result = "{\"type\":\"Program\",\"body\":[{\"type\":\"FunctionDef\",\"id\":\"main\",\"return_type\":\"int32\",\"parameters\":{\"type\":\"Expression\",\"id\":\"ParameterList\",\"declarations\":[]},\"body\":{\"type\":\"ExecutionBlock\",\"execution\":[{\"type\":\"Expression\",\"id\":\"VariableDefinition\",\"name\":\"x\",\"declarations\":[{\"type\":\"Literal\",\"data_type\":\"float32\",\"value\":\"0.0\"}]},{\"type\":\"Expression\",\"id\":\"ReturnType\",\"declarations\":[{\"type\":\"Literal\",\"data_type\":\"To Be Determined\",\"value\":\"0\"}]}]}}],\"SourceType\":\"module\"}";
+    auto data = compileToAST(std::vector<lstd::string>(),lstd::move(source));
+    if(data.isError) printf("Compiler Test: %s", data.error_msg.c_str());
+    EXPECT_FALSE(data.isError);
+    EXPECT_STREQ(data.data_msg.c_str(),result);
+}
 
-//TODO: add float32, float64
+TEST(AST,PARSE_MAIN_WITH_VAR_FLOAT64_WITHOUT_VALUE)
+{
+    lstd::string source = "func main() -> int32 { float64 x ret 0}";
+    const char* result = "{\"type\":\"Program\",\"body\":[{\"type\":\"FunctionDef\",\"id\":\"main\",\"return_type\":\"int32\",\"parameters\":{\"type\":\"Expression\",\"id\":\"ParameterList\",\"declarations\":[]},\"body\":{\"type\":\"ExecutionBlock\",\"execution\":[{\"type\":\"Expression\",\"id\":\"VariableDefinition\",\"name\":\"x\",\"declarations\":[{\"type\":\"Literal\",\"data_type\":\"float64\",\"value\":\"0.0\"}]},{\"type\":\"Expression\",\"id\":\"ReturnType\",\"declarations\":[{\"type\":\"Literal\",\"data_type\":\"To Be Determined\",\"value\":\"0\"}]}]}}],\"SourceType\":\"module\"}";
+    auto data = compileToAST(std::vector<lstd::string>(),lstd::move(source));
+    if(data.isError) printf("Compiler Test: %s", data.error_msg.c_str());
+    EXPECT_FALSE(data.isError);
+    EXPECT_STREQ(data.data_msg.c_str(),result);
+}
+
 int main(int argc, char* argv[])
 {
     testing::InitGoogleTest(&argc, argv);

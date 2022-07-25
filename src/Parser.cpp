@@ -1,7 +1,6 @@
 #include "Parser.h"
 #include <lstd/LookUpTable.h>
 #include <lstd/Util.h>
-lstd::string x ("test");
 
 const data_size keyword_lookup[] = 
 {
@@ -150,9 +149,9 @@ const ASTExpression* Parser::parseVar(lexToken* current_token) noexcept
     {
         literal = new ASTLiteral();
         literal->data_type = data_type;
-        if(literal->data_type >= 2 && literal->data_type <= 11)
+        if(literal->data_type >= INT8_TYPE && literal->data_type <= UINT64_TYPE)
             literal->value = "0";
-        else if(literal->data_type >= 12 && literal->data_type <= 14)
+        else if(literal->data_type >= FLOAT32_TYPE && literal->data_type <= FLOAT64_TYPE)
             literal->value = "0.0";
         else literal->value = "";
     }

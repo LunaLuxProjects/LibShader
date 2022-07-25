@@ -62,9 +62,10 @@ GmlSpan Lexer::parseSpanNextToken() noexcept
     return {start, offset};
 }
 
-const data_size reject_lookup[] = {lstd::hash<lstd::string>{}("\n"), lstd::hash<lstd::string>{}(" "),
-                                   lstd::hash<lstd::string>{}("\r"), lstd::hash<lstd::string>{}("\t"),
-                                   lstd::hash<lstd::string>{}(";")};
+const data_size reject_lookup[] = {
+    lstd::hash<lstd::string>{}("\n"), lstd::hash<lstd::string>{}(" "),
+    lstd::hash<lstd::string>{}("\r"), lstd::hash<lstd::string>{}("\t"),
+    lstd::hash<lstd::string>{}(";")};
 
 const lstd::ReadOnlyLookupTable<data_size, LexTokenEnum> lookup = {
     {lstd::hash<lstd::string>{}("func"), T_FUNC},    {lstd::hash<lstd::string>{}("ret"), T_RET},
@@ -87,7 +88,8 @@ Lexer::Lexer(lstd::string source_in)
     {
         GmlSpan span = parseSpanNextToken();
         lstd::string word = source.substr(span.start, lstd::max<data_size>(1, span.end - span.start));
-        if(word == '\0') continue;
+        if (word == '\0')
+            continue;
         data_size view = lstd::hash<lstd::string>{}(word);
         bool found = false;
         for (auto &item : reject_lookup)
